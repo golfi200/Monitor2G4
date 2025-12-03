@@ -18,7 +18,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-import lib_audio as ali
+import lib.audio as ali
 
 # global timing values
 gScanInterval_ms = None                 # interval of power integration for avg (multiple sweeps)
