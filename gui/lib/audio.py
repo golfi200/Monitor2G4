@@ -67,4 +67,3 @@ def play_audio(max_vals: np.ndarray):
         return
     audio_buf = max_to_audio(max_vals)
     sd.play(audio_buf, samplerate=AUDIO_FS, blocking=False)
-
