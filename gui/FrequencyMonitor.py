@@ -26,9 +26,9 @@ import lib.audio as ali
 # -------------------------------------------------------------
 APPNAME = " Frequency Monitor: "
 APPDESCRIPTION = " displays json-data with freq. and RSSI-values from 'Power Scanner 2G4'-device, connected via USB serial, or from file "
-APPVERSION = " 1.0.0"
-APPCMD = " Cmds: '!'/'.'/'1'/'2'/'5'/'0'=scan-period, 'l'/'n'=switch Low/Normal freq.range, 'x <freq1> <freq2>'=set freq.range, 'h'=reset MaxH, 'a'=toggle audio, '?'=help, ..."
-APPCMD2 = "Cmd2: 's'=trigger single scan, 'p'=toggle periodic, "
+APPVERSION = " 1.0.1"
+APPCMD = " Cmds: '!'/'.'/'1'/'2'/'5'/'0'=scan-interval 0.25/0.5/1/2/5/10sec, 'l'/'n'=set Low/Norm freq.range, 'x <freq1> <freq2>'=set freq.range, 'h'=reset MaxH, 'a'=toggle audio, '?'=help, ..."
+APPCMD2 = "Cmd2: 's'=trigger single scan, 'p'=toggle periodic scan, "
 
 # Serial interface definitions
 SERIAL_PORT = "/dev/ttyACM0"            # keep empty for auto-detection
@@ -280,7 +280,7 @@ def replay_reader_thread():
 plt.style.use("ggplot")
 plt.rcParams['toolbar'] = 'none'                             # no toolbar
 plt.rcParams['keymap.yscale'].remove('l')                    # no toggle of logaritmic scale
-fig = plt.figure(figsize=(12, 7))
+fig = plt.figure(figsize=(13, 7))
 fig.canvas.manager.set_window_title(APPNAME + 'ver'+ APPVERSION + ': ' + APPDESCRIPTION)
 
 # Hinweis-Texte in Fenster-Koordinaten (0..1)
@@ -305,23 +305,30 @@ ax_wf      = fig.add_subplot(gs[1])
 ax_console = fig.add_subplot(gs[2])
 
 # Placeholder-Objekte
-spec_scatter_hold = ax_spec.scatter([], [], s=30, c="blue", marker="^", label="HoldM")
+spec_scatter_hold = ax_spec.scatter([], [], s=20, c="blue", marker="^", label="HoldM")
 spec_line_max,  = ax_spec.plot([], [], label="MAX")
 spec_line_avg,  = ax_spec.plot([], [], label="AVG")
 spec_line_min,  = ax_spec.plot([], [], label="MIN")
 
 # spectrum part
-ax_spec.set_ylabel("RSSI [dBm]")
-ax_spec.set_xlabel("Frequency [MHz]")
+ax_spec.set_ylabel("RSSI [dBm]", fontsize=10,)
+ax_spec.set_xlabel("Frequency [MHz]", fontsize=10,)
 ax_spec.set_ylim(DBM_MIN, DBM_MAX)
-ax_spec.legend(loc="upper right")
+leg_spec=ax_spec.legend(loc="upper right",
+    #borderpad=0.2,
+    labelspacing=0.1,
+    fontsize=9, 
+    bbox_to_anchor=(1.00, 0.94))
+leg_spec.get_frame().set_alpha(0.2)
+for txt in leg_spec.get_texts():
+    txt.set_color("#777777")            # soft-grey
 ax_spec.grid(True)
 ax_spec.grid(True, which="minor")
 ax_spec.minorticks_on()
 
 # waterfall part
 wf_im = ax_wf.imshow(
-    np.zeros((WF_ROWS, 10)),   # placeholder, wird später korrekt dimensioniert
+    np.zeros((WF_ROWS, 10)),                # placeholder, wird später korrekt dimensioniert
     aspect="auto",
     origin="lower",
     extent=[0, 10, 0, WF_ROWS],
@@ -329,8 +336,8 @@ wf_im = ax_wf.imshow(
     vmax=DBM_MAX_WF,
     cmap="viridis",
 )
-ax_wf.set_ylabel("Time (older → up)")
-ax_wf.set_xlabel("Frequency [MHz]")
+ax_wf.set_ylabel("Time (older → up)", fontsize=10,)
+ax_wf.set_xlabel("Frequency [MHz]", fontsize=10,)
 ax_wf.minorticks_on()
 ax_wf.grid(True, color="white", alpha=0.5, linewidth=0.3)
 
@@ -378,16 +385,13 @@ def update_console_ax():
 WIFI_CHANNELS = {ch: 2412 + 5 * (ch - 1) for ch in range(1, 14)}
 
 # BLE Advertising-Kanäle (37, 38, 39)
-BLE_CHANNELS = {
-    37: 2402,
-    38: 2426,
-    39: 2480,
-}
+BLE_CHANNELS = { 37: 2402, 38: 2426,39: 2480,}
 
 # ZigBee (IEEE 802.15.4) Kanäle 11–26, Center: 2405 + 5*(n-11) MHz
 ZIGBEE_CHANNELS = {ch: 2405 + 5 * (ch - 11) for ch in range(11, 27)}
 
-HOYMILES_CHANNELS = {"H2G4": 2403, "H2G4": 2423, "H2G4": 2440, "H2G4": 2461, "H2G4": 2475}
+# old Hoymiles nrf24 channels, todo: map it to spectrum
+HOYMILES_CHANNELS = {3:2403, 23:2423, 40:2440, 61:2461, 75:2475}
 
 # 5G NR bands (subset visible in 2.4 GHz scan)
 FIVEG_BANDS = [
@@ -396,13 +400,12 @@ FIVEG_BANDS = [
 ]
 
 
-
-def draw_channel_markers(ax):
+def draw_channel_markers(ax, x_min, x_max):
     """
     Zeichnet Kanalmarkierungen (WiFi, BLE, ZigBee) auf ax (Spektrum).
     Nutzt die aktuellen x-/y-Limits des Axes.
     """
-    x_min, x_max = ax.get_xlim()
+    #x_min, x_max = ax.get_xlim()
     y_min, y_max = ax.get_ylim()
 
     # etwas Platz über dem Plot für Textlabels
@@ -410,8 +413,10 @@ def draw_channel_markers(ax):
 
     # WiFi: dünne graue Linien + 'Wxx'
     for ch, f in WIFI_CHANNELS.items():
-        if f < x_min or f > x_max:
+        if f < x_min:
             continue
+        elif f > x_max:
+            break
         ax.axvline(f, color="lightgray", linestyle=":", linewidth=0.8)
         ax.text(
             f, text_y,
@@ -425,8 +430,10 @@ def draw_channel_markers(ax):
 
     # BLE: orange Linien + 'B37' etc.
     for ch, f in BLE_CHANNELS.items():
-        if f < x_min or f > x_max:
+        if f < x_min:
             continue
+        elif f > x_max:
+            break
         ax.axvline(f, color="blue", linestyle="--", linewidth=1.0)
         ax.text(
             f, text_y,
@@ -440,8 +447,10 @@ def draw_channel_markers(ax):
 
     # ZigBee: grüne Linien + 'Z11' etc.
     for ch, f in ZIGBEE_CHANNELS.items():
-        if f < x_min or f > x_max:
+        if f < x_min:
             continue
+        elif f > x_max:
+            break
         ax.axvline(f, color="green", linestyle=":", linewidth=1.2)
         ax.text(
             f, text_y,
@@ -475,20 +484,22 @@ def draw_5g_bands(ax, fmin, fmax):
         xs = max(f0, fmin)
         xe = min(f1, fmax)
 
-        # schmaler Balken unten im Plot (z.B. 0.00..0.07 der Achsenhöhe)
+        # channel bar in Plot
         ax.axvspan(
             xs, xe,
-            ymin=0.00, ymax=0.08,
+            #ymin=0.00, ymax=0.08,              # bottom line
+            ymin=0.92, ymax=1.00,               # top line
             transform=trans,
             alpha=0.5,
             color="tab:red",
             linewidth=0.1,
         )
 
-        # Label in die Mitte des sichtbaren Teils
+        # channel label
         xc = 0.5 * (xs + xe)
         ax.text(
-            xc, 0.035,              # Mitte der kleinen Leiste
+            #xc, 0.035,                          # channel label in center of range, y: bottom line
+            xc, 0.95,                         # channel label in center of range, y: top line
             b["label"],
             ha="center", va="center",
             fontsize=8,
@@ -700,7 +711,7 @@ def animate(frame):
             freq0_last = freqs[0]
             freq_range_last = freqs.size;
             status_text.set_text(f"Sweep duration: {gSweepTime_ms} ms")
-            draw_channel_markers(ax_spec)
+            draw_channel_markers(ax_spec, freqs[0], freqs[-1])
             draw_5g_bands(ax_spec, freqs[0], freqs[-1])
 
         # Spektrum aktualisieren (fester dBm-Bereich)
