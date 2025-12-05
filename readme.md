@@ -37,7 +37,7 @@ python FrequencyMonitor.py --logfile out.log             # received json-date fr
 
 If it works, GUI starts:
 
-<p align="center"><img width="500" height="300" alt="Screenshot from 2025-12-04 09-04-00" src="https://github.com/user-attachments/assets/7aeb7155-b657-47ac-abd4-86fa3ebde1e2" />
+<p align="center"><img width="800" height="500" alt="Screenshot from 2025-12-04 09-04-00" src="https://github.com/user-attachments/assets/7aeb7155-b657-47ac-abd4-86fa3ebde1e2" />
 
 ### Commands that are supported by the python GUI:
 * 'a' : toggle audio output at PC (frequency spectrum mapped to audio in range 440 ... 4400KHz)
@@ -81,7 +81,7 @@ Help and info:
 ## Alternatively the SuperMini embeded-SW offers its own ASCII-GUI 
 Open the serial port in a serial terminal like 'cuteCom', 'gtkterm' or Arduino-'Serial Monitor'. The baudrate is not relevant since device uses USB serial profile cdc_acm.
 
-<p align="center"><img width="500" height="300" alt="Screenshot from 2025-11-29 10-07-36" src="https://github.com/user-attachments/assets/664b77b2-e808-4de6-b348-fd5a3ffd18f4" />
+<p align="center"><img width="800" height="500" alt="Screenshot from 2025-11-29 10-07-36" src="https://github.com/user-attachments/assets/664b77b2-e808-4de6-b348-fd5a3ffd18f4" />
 
 
 
