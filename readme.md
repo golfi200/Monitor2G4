@@ -74,7 +74,8 @@ Control:
 * 'y <rssi1> <rssi2>\n' : set y-axis in dBm in ASCII modes (range possible -110...0dBm)
 * 'h' : reset MaxHold
 
-Help and version:
+Help and info:
+* 'i' : print freq. info about WLAN, BLEadv, Zigbee, Hoymiles, 3GPP 5G channels
 * '?' : print version and command help
 
 ## Alternatively the SuperMini embeded-SW offers its own ASCII-GUI 
